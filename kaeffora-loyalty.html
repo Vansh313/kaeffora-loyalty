@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaeffora — Loyalty</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #C85A1E;
+    --orange-light: #D97840;
+    --orange-pale: #E8956A;
+    --beige: #F5EFE0;
+    --beige-dark: #EAE0C8;
+    --beige-mid: #DDD0B3;
+    --brown: #6B3F1E;
+    --brown-light: #A0662A;
+    --text: #2C1A0E;
+    --text-mid: #6B4A2A;
+    --text-dim: #A08060;
+    --text-muted: #C4A882;
+    --white: #FDFAF4;
+    --surface: #FAF5EB;
+    --surface2: #F0E8D5;
+    --border: rgba(168,100,40,0.15);
+    --border-mid: rgba(168,100,40,0.25);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    background: var(--beige);
+    color: var(--text);
+    font-family: 'Jost', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* subtle paper texture */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events:none; z-index:0; opacity:0.6;
+  }
+
+  .app { position:relative; z-index:1; max-width:420px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; }
+
+  /* SCREENS */
+  .screen { display:none; flex-direction:column; min-height:100vh; animation: fadeUp 0.35s ease; }
+  .screen.active { display:flex; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+
+  /* NAV */
+  .nav {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 22px 14px;
+    background: rgba(245,239,224,0.92);
+    backdrop-filter:blur(10px);
+    border-bottom: 0.5px solid var(--border);
+    position:sticky; top:0; z-index:10;
+  }
+  .nav-logo { font-family:'Playfair Display', serif; font-size:22px; font-weight:400; color:var(--orange); letter-spacing:0.02em; }
+  .nav-sub { font-size:9px; letter-spacing:0.3em; color:var(--text-dim); margin-top:1px; font-weight:400; }
+  .nav-icon { width:36px; height:36px; border-radius:50%; background:var(--surface2); border:0.5px solid var(--border-mid); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:15px; transition:background 0.2s; }
+  .nav-icon:hover { background:var(--beige-dark); }
+
+  /* LOYALTY CARD */
+  .hero { padding:24px 20px 0; }
+  .loyalty-card {
+    background: var(--orange);
+    border-radius: 20px;
+    padding: 26px 26px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .loyalty-card::before {
+    content:'';
+    position:absolute; top:-40px; right:-40px;
+    width:160px; height:160px;
+    background: rgba(255,255,255,0.06);
+    border-radius:50%;
+    pointer-events:none;
+  }
+  .loyalty-card::after {
+    content:'';
+    position:absolute; bottom:-30px; left:-20px;
+    width:120px; height:120px;
+    background: rgba(0,0,0,0.06);
+    border-radius:50%;
+    pointer-events:none;
+  }
+
+  .card-label { font-size:9px; letter-spacing:0.35em; color:rgba(255,255,255,0.6); margin-bottom:5px; font-weight:400; }
+  .card-name { font-family:'Playfair Display', serif; font-size:22px; font-weight:400; color:#fff; margin-bottom:18px; font-style:italic; }
+  .points-row { display:flex; align-items:flex-end; gap:6px; margin-bottom:4px; }
+  .points-big { font-family:'Playfair Display', serif; font-size:54px; font-weight:400; color:#fff; line-height:1; }
+  .points-unit { font-size:10px; letter-spacing:0.2em; color:rgba(255,255,255,0.65); margin-bottom:10px; }
+  .card-divider { height:0.5px; background:rgba(255,255,255,0.2); margin:14px 0; }
+  .card-meta { display:flex; justify-content:space-between; }
+  .card-meta-label { font-size:8px; letter-spacing:0.2em; color:rgba(255,255,255,0.55); margin-bottom:3px; }
+  .card-meta-value { font-size:12px; color:rgba(255,255,255,0.85); font-weight:400; }
+  .card-tier-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.15); border:0.5px solid rgba(255,255,255,0.25); border-radius:20px; padding:3px 10px; font-size:9px; letter-spacing:0.2em; color:#fff; }
+
+  /* PROGRESS */
+  .progress-wrap { margin:18px 20px 0; }
+  .progress-label { display:flex; justify-content:space-between; font-size:9px; letter-spacing:0.15em; color:var(--text-dim); margin-bottom:7px; }
+  .progress-track { height:3px; background:var(--beige-dark); border-radius:3px; }
+  .progress-fill { height:100%; background:linear-gradient(90deg, var(--orange), var(--orange-pale)); border-radius:3px; transition:width 1s cubic-bezier(0.4,0,0.2,1); }
+  .progress-next { font-size:10px; color:var(--text-dim); margin-top:6px; text-align:right; letter-spacing:0.05em; }
+
+  /* SECTIONS */
+  .section { padding:22px 20px 0; }
+  .section-title { font-size:9px; letter-spacing:0.35em; color:var(--text-muted); margin-bottom:14px; font-weight:500; }
+
+  /* QUICK ACTIONS */
+  .quick-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .qa-btn {
+    background:var(--white);
+    border:0.5px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    cursor:pointer;
+    transition:border-color 0.2s, background 0.2s;
+    text-align:left;
+  }
+  .qa-btn:hover { border-color:var(--orange-pale); background:var(--surface); }
+  .qa-icon { font-size:22px; margin-bottom:8px; }
+  .qa-label { font-size:10px; letter-spacing:0.15em; color:var(--text); font-weight:500; }
+  .qa-sub { font-size:10px; color:var(--text-muted); margin-top:2px; }
+
+  /* REWARDS */
+  .rewards-list { display:flex; flex-direction:column; gap:10px; }
+  .reward-item {
+    background:var(--white);
+    border:0.5px solid var(--border);
+    border-radius:14px;
+    padding:14px 16px;
+    display:flex; align-items:center; gap:12px;
+    cursor:pointer;
+    transition:border-color 0.2s;
+  }
+  .reward-item:hover { border-color:var(--orange-pale); }
+  .reward-item.unlocked { border-color:rgba(200,90,30,0.3); }
+  .reward-icon { font-size:22px; width:42px; height:42px; display:flex; align-items:center; justify-content:center; background:var(--beige); border-radius:10px; flex-shrink:0; }
+  .reward-info { flex:1; }
+  .reward-name { font-size:13px; color:var(--text); margin-bottom:3px; font-weight:400; }
+  .reward-pts { font-size:10px; letter-spacing:0.08em; color:var(--text-dim); }
+  .reward-badge { font-size:9px; letter-spacing:0.12em; padding:4px 10px; border-radius:20px; flex-shrink:0; }
+  .reward-badge.available { background:rgba(200,90,30,0.1); color:var(--orange); border:0.5px solid rgba(200,90,30,0.3); }
+  .reward-badge.locked { background:var(--surface2); color:var(--text-muted); border:0.5px solid var(--border); }
+
+  /* HISTORY */
+  .history-list { display:flex; flex-direction:column; }
+  .history-item { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:0.5px solid var(--border); }
+  .history-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .history-dot.earn { background:var(--orange); }
+  .history-dot.redeem { background:#5A8A5A; }
+  .history-info { flex:1; }
+  .history-desc { font-size:12px; color:var(--text-mid); margin-bottom:2px; }
+  .history-date { font-size:10px; color:var(--text-muted); }
+  .history-pts { font-family:'Playfair Display', serif; font-size:14px; }
+  .history-pts.earn { color:var(--orange); }
+  .history-pts.redeem { color:#5A8A5A; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position:sticky; bottom:0;
+    background: rgba(245,239,224,0.95);
+    backdrop-filter:blur(10px);
+    border-top:0.5px solid var(--border);
+    display:flex;
+    padding:10px 0 18px;
+    margin-top:auto;
+  }
+  .bn-item { flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; cursor:pointer; padding:4px 0; transition:opacity 0.2s; }
+  .bn-item:hover { opacity:0.75; }
+  .bn-icon { font-size:18px; }
+  .bn-label { font-size:8px; letter-spacing:0.2em; color:var(--text-muted); }
+  .bn-item.active .bn-label { color:var(--orange); font-weight:500; }
+
+  /* QR */
+  .qr-wrap { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px 20px; gap:18px; }
+  .qr-box { width:210px; height:210px; background:var(--white); border:0.5px solid var(--border-mid); border-radius:20px; display:flex; align-items:center; justify-content:center; position:relative; }
+  .qr-corner { position:absolute; width:18px; height:18px; border-color:var(--orange); border-style:solid; }
+  .qr-corner.tl { top:12px; left:12px; border-width:2px 0 0 2px; }
+  .qr-corner.tr { top:12px; right:12px; border-width:2px 2px 0 0; }
+  .qr-corner.bl { bottom:12px; left:12px; border-width:0 0 2px 2px; }
+  .qr-corner.br { bottom:12px; right:12px; border-width:0 2px 2px 0; }
+
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(44,26,14,0.6); backdrop-filter:blur(4px); z-index:100; align-items:flex-end; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--white); border-radius:24px 24px 0 0; padding:28px 24px 36px; width:100%; max-width:420px; animation:slideUp 0.35s cubic-bezier(0.4,0,0.2,1); }
+  @keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+  .modal-handle { width:36px; height:3px; background:var(--beige-dark); border-radius:2px; margin:0 auto 24px; }
+  .modal-title { font-family:'Playfair Display', serif; font-size:24px; font-weight:400; color:var(--text); margin-bottom:4px; }
+  .modal-sub { font-size:10px; letter-spacing:0.2em; color:var(--text-muted); margin-bottom:24px; }
+
+  .input-label { font-size:9px; letter-spacing:0.25em; color:var(--text-dim); margin-bottom:8px; display:block; }
+  .input-field { width:100%; background:var(--beige); border:0.5px solid var(--border-mid); border-radius:10px; padding:13px 16px; color:var(--text); font-family:'Jost', sans-serif; font-size:14px; outline:none; transition:border-color 0.2s; }
+  .input-field:focus { border-color:var(--orange); }
+  .input-field::placeholder { color:var(--text-muted); }
+
+  .pts-preview { display:none; background:rgba(200,90,30,0.08); border:0.5px solid rgba(200,90,30,0.2); border-radius:10px; padding:12px 16px; margin-bottom:8px; font-size:13px; color:var(--orange); text-align:center; font-family:'Playfair Display', serif; }
+
+  .btn-orange { width:100%; padding:15px; background:var(--orange); border:none; border-radius:12px; font-family:'Jost', sans-serif; font-size:10px; letter-spacing:0.3em; color:#fff; font-weight:500; cursor:pointer; margin-top:8px; transition:opacity 0.2s, transform 0.1s; }
+  .btn-orange:hover { opacity:0.9; }
+  .btn-orange:active { transform:scale(0.98); }
+  .btn-ghost { width:100%; padding:13px; background:transparent; border:0.5px solid var(--border-mid); border-radius:12px; font-family:'Jost', sans-serif; font-size:10px; letter-spacing:0.25em; color:var(--text-dim); cursor:pointer; margin-top:8px; transition:border-color 0.2s; }
+  .btn-ghost:hover { border-color:var(--orange-pale); }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:85px; left:50%; transform:translateX(-50%) translateY(16px); background:var(--orange); border-radius:30px; padding:10px 20px; font-size:11px; letter-spacing:0.12em; color:#fff; opacity:0; transition:all 0.3s; z-index:200; white-space:nowrap; }
+  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* PROFILE */
+  .profile-header { padding:28px 20px 20px; text-align:center; border-bottom:0.5px solid var(--border); }
+  .avatar { width:68px; height:68px; border-radius:50%; background:var(--orange); display:flex; align-items:center; justify-content:center; margin:0 auto 12px; font-family:'Playfair Display', serif; font-size:26px; color:#fff; border:2px solid var(--orange-pale); }
+  .profile-name { font-family:'Playfair Display', serif; font-size:20px; font-weight:400; margin-bottom:4px; }
+  .profile-tier { font-size:9px; letter-spacing:0.3em; color:var(--orange); }
+  .profile-stats { display:grid; grid-template-columns:1fr 1fr 1fr; padding:18px 20px; border-bottom:0.5px solid var(--border); }
+  .stat { text-align:center; }
+  .stat-val { font-family:'Playfair Display', serif; font-size:22px; color:var(--orange); }
+  .stat-label { font-size:9px; letter-spacing:0.15em; color:var(--text-muted); margin-top:2px; }
+  .profile-menu { padding:14px 20px; }
+  .menu-item { display:flex; align-items:center; gap:14px; padding:13px 0; border-bottom:0.5px solid var(--border); cursor:pointer; }
+  .menu-item:last-child { border-bottom:none; }
+  .menu-icon { font-size:16px; width:30px; }
+  .menu-text { font-size:11px; letter-spacing:0.12em; color:var(--text-mid); flex:1; font-weight:400; }
+  .menu-arrow { color:var(--text-muted); font-size:12px; }
+
+  .spacer { height:24px; }
+  .input-group { margin-bottom:14px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="nav">
+      <div>
+        <div class="nav-logo">Kæffora</div>
+        <div class="nav-sub">LOYALTY MEMBERS</div>
+      </div>
+      <div class="nav-icon" onclick="showScreen('profile')">👤</div>
+    </div>
+
+    <div class="hero">
+      <div class="loyalty-card">
+        <div class="card-label">MEMBER CARD</div>
+        <div class="card-name">Vansh Gupta</div>
+        <div class="points-row">
+          <div class="points-big" id="pts-display">2,340</div>
+          <div class="points-unit">POINTS</div>
+        </div>
+        <div class="card-divider"></div>
+        <div class="card-meta">
+          <div>
+            <div class="card-meta-label">TIER</div>
+            <div class="card-tier-badge">✦ Gold Member</div>
+          </div>
+          <div style="text-align:right">
+            <div class="card-meta-label">MEMBER SINCE</div>
+            <div class="card-meta-value">January 2026</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>GOLD</span>
+        <span>PLATINUM — 3,000 PTS</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="prog-fill" style="width:47%"></div>
+      </div>
+      <div class="progress-next" id="prog-text">660 pts to Platinum</div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">QUICK ACTIONS</div>
+      <div class="quick-actions">
+        <div class="qa-btn" onclick="openEarnModal()">
+          <div class="qa-icon">☕</div>
+          <div class="qa-label">EARN POINTS</div>
+          <div class="qa-sub">Add bill amount</div>
+        </div>
+        <div class="qa-btn" onclick="showScreen('rewards')">
+          <div class="qa-icon">🎁</div>
+          <div class="qa-label">REDEEM</div>
+          <div class="qa-sub">Use your points</div>
+        </div>
+        <div class="qa-btn" onclick="showScreen('qr')">
+          <div class="qa-icon">📱</div>
+          <div class="qa-label">SHOW QR</div>
+          <div class="qa-sub">At the counter</div>
+        </div>
+        <div class="qa-btn" onclick="showScreen('history')">
+          <div class="qa-icon">📋</div>
+          <div class="qa-label">HISTORY</div>
+          <div class="qa-sub">All transactions</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">AVAILABLE REWARDS</div>
+      <div class="rewards-list">
+        <div class="reward-item unlocked" onclick="redeemReward('Free Espresso',200)">
+          <div class="reward-icon">☕</div>
+          <div class="reward-info">
+            <div class="reward-name">Free Espresso</div>
+            <div class="reward-pts">200 POINTS · Worth ₹119</div>
+          </div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item unlocked" onclick="redeemReward('Free Waffle',350)">
+          <div class="reward-icon">🧇</div>
+          <div class="reward-info">
+            <div class="reward-name">Free Waffle</div>
+            <div class="reward-pts">350 POINTS · Worth ₹219</div>
+          </div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item" onclick="showToast('Need 660 more pts for this!')">
+          <div class="reward-icon">🍕</div>
+          <div class="reward-info">
+            <div class="reward-name">Free Margherita Pizza</div>
+            <div class="reward-pts">3,000 POINTS · Worth ₹299</div>
+          </div>
+          <div class="reward-badge locked">660 MORE</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+
+    <div class="bottom-nav">
+      <div class="bn-item active" onclick="showScreen('home')"><div class="bn-icon">🏠</div><div class="bn-label">HOME</div></div>
+      <div class="bn-item" onclick="showScreen('rewards')"><div class="bn-icon">🎁</div><div class="bn-label">REWARDS</div></div>
+      <div class="bn-item" onclick="showScreen('qr')"><div class="bn-icon">📱</div><div class="bn-label">MY QR</div></div>
+      <div class="bn-item" onclick="showScreen('history')"><div class="bn-icon">📋</div><div class="bn-label">HISTORY</div></div>
+    </div>
+  </div>
+
+  <!-- REWARDS -->
+  <div class="screen" id="screen-rewards">
+    <div class="nav">
+      <div><div class="nav-logo">Rewards</div><div class="nav-sub">USE YOUR POINTS</div></div>
+      <div class="nav-icon" onclick="showScreen('home')">✕</div>
+    </div>
+    <div class="section" style="padding-top:24px">
+      <div style="background:var(--orange);border-radius:16px;padding:18px 20px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;">
+        <div>
+          <div style="font-size:9px;letter-spacing:0.25em;color:rgba(255,255,255,0.6);margin-bottom:4px">YOUR BALANCE</div>
+          <div style="font-family:'Playfair Display',serif;font-size:34px;color:#fff" id="balance-display">2,340 pts</div>
+        </div>
+        <div style="font-family:'Playfair Display',serif;font-size:40px;color:rgba(255,255,255,0.15)">✦</div>
+      </div>
+      <div class="section-title">ALL REWARDS</div>
+      <div class="rewards-list">
+        <div class="reward-item unlocked" onclick="redeemReward('Free Espresso',200)">
+          <div class="reward-icon">☕</div>
+          <div class="reward-info"><div class="reward-name">Free Espresso</div><div class="reward-pts">200 PTS · Worth ₹119</div></div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item unlocked" onclick="redeemReward('Free Masala Chai',100)">
+          <div class="reward-icon">🍵</div>
+          <div class="reward-info"><div class="reward-name">Free Masala Chai</div><div class="reward-pts">100 PTS · Worth ₹99</div></div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item unlocked" onclick="redeemReward('Free Waffle',350)">
+          <div class="reward-icon">🧇</div>
+          <div class="reward-info"><div class="reward-name">Free Waffle</div><div class="reward-pts">350 PTS · Worth ₹219</div></div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item unlocked" onclick="redeemReward('Free Brownie Sizzler',500)">
+          <div class="reward-icon">🍫</div>
+          <div class="reward-info"><div class="reward-name">Free Brownie Sizzler</div><div class="reward-pts">500 PTS · Worth ₹279</div></div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item unlocked" onclick="redeemReward('Free Burger',800)">
+          <div class="reward-icon">🍔</div>
+          <div class="reward-info"><div class="reward-name">Free Smash Burger</div><div class="reward-pts">800 PTS · Worth ₹249</div></div>
+          <div class="reward-badge available">REDEEM</div>
+        </div>
+        <div class="reward-item" onclick="showToast('Need 3,000 pts for this reward')">
+          <div class="reward-icon">🍕</div>
+          <div class="reward-info"><div class="reward-name">Free Margherita Pizza</div><div class="reward-pts">3,000 PTS · Worth ₹299</div></div>
+          <div class="reward-badge locked">660 MORE</div>
+        </div>
+        <div class="reward-item" onclick="showToast('Platinum members only')">
+          <div class="reward-icon">🥂</div>
+          <div class="reward-info"><div class="reward-name">Private Dining Experience</div><div class="reward-pts">5,000 PTS · Platinum only</div></div>
+          <div class="reward-badge locked">PLATINUM</div>
+        </div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-nav">
+      <div class="bn-item" onclick="showScreen('home')"><div class="bn-icon">🏠</div><div class="bn-label">HOME</div></div>
+      <div class="bn-item active" onclick="showScreen('rewards')"><div class="bn-icon">🎁</div><div class="bn-label">REWARDS</div></div>
+      <div class="bn-item" onclick="showScreen('qr')"><div class="bn-icon">📱</div><div class="bn-label">MY QR</div></div>
+      <div class="bn-item" onclick="showScreen('history')"><div class="bn-icon">📋</div><div class="bn-label">HISTORY</div></div>
+    </div>
+  </div>
+
+  <!-- QR -->
+  <div class="screen" id="screen-qr">
+    <div class="nav">
+      <div><div class="nav-logo">My QR</div><div class="nav-sub">SHOW AT COUNTER</div></div>
+      <div class="nav-icon" onclick="showScreen('home')">✕</div>
+    </div>
+    <div class="qr-wrap">
+      <div style="font-family:'Playfair Display',serif;font-size:13px;letter-spacing:0.2em;color:var(--text-dim);text-align:center;font-style:italic">Vansh Gupta · Gold Member</div>
+      <div class="qr-box">
+        <div class="qr-corner tl"></div><div class="qr-corner tr"></div><div class="qr-corner bl"></div><div class="qr-corner br"></div>
+        <div style="text-align:center">
+          <div style="font-size:64px;opacity:0.15;color:var(--orange)">▦</div>
+          <div style="font-size:9px;letter-spacing:0.2em;color:var(--text-muted);margin-top:4px">KFVG·2026·8810</div>
+        </div>
+      </div>
+      <div style="font-size:11px;letter-spacing:0.08em;color:var(--text-dim);text-align:center;line-height:1.7">Show this QR to the Kæffora team<br>after your order to earn points.</div>
+      <div style="background:var(--white);border:0.5px solid var(--border-mid);border-radius:14px;padding:16px 24px;text-align:center;width:100%">
+        <div style="font-size:9px;letter-spacing:0.25em;color:var(--text-muted);margin-bottom:6px">MEMBER ID</div>
+        <div style="font-family:'Playfair Display',serif;font-size:22px;color:var(--orange);letter-spacing:0.15em">KFVG-8810</div>
+      </div>
+      <div style="font-size:10px;letter-spacing:0.08em;color:var(--text-muted);text-align:center">1 point earned per ₹1 spent at Kæffora</div>
+    </div>
+    <div class="bottom-nav">
+      <div class="bn-item" onclick="showScreen('home')"><div class="bn-icon">🏠</div><div class="bn-label">HOME</div></div>
+      <div class="bn-item" onclick="showScreen('rewards')"><div class="bn-icon">🎁</div><div class="bn-label">REWARDS</div></div>
+      <div class="bn-item active" onclick="showScreen('qr')"><div class="bn-icon">📱</div><div class="bn-label">MY QR</div></div>
+      <div class="bn-item" onclick="showScreen('history')"><div class="bn-icon">📋</div><div class="bn-label">HISTORY</div></div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div class="screen" id="screen-history">
+    <div class="nav">
+      <div><div class="nav-logo">History</div><div class="nav-sub">ALL TRANSACTIONS</div></div>
+      <div class="nav-icon" onclick="showScreen('home')">✕</div>
+    </div>
+    <div class="section" style="padding-top:24px">
+      <div class="section-title">MAY 2026</div>
+      <div class="history-list" id="history-list">
+        <div class="history-item"><div class="history-dot earn"></div><div class="history-info"><div class="history-desc">Pasta & Cold Brew</div><div class="history-date">23 May 2026 · 1:42 PM</div></div><div class="history-pts earn">+680</div></div>
+        <div class="history-item"><div class="history-dot redeem"></div><div class="history-info"><div class="history-desc">Redeemed: Free Espresso</div><div class="history-date">20 May 2026 · 11:15 AM</div></div><div class="history-pts redeem">−200</div></div>
+        <div class="history-item"><div class="history-dot earn"></div><div class="history-info"><div class="history-desc">Waffles & Matcha Latte</div><div class="history-date">18 May 2026 · 10:30 AM</div></div><div class="history-pts earn">+498</div></div>
+        <div class="history-item"><div class="history-dot earn"></div><div class="history-info"><div class="history-desc">Asian Bowl & Mojito</div><div class="history-date">15 May 2026 · 7:55 PM</div></div><div class="history-pts earn">+762</div></div>
+        <div class="history-item"><div class="history-dot earn"></div><div class="history-info"><div class="history-desc">Coffee & Corn Dog</div><div class="history-date">10 May 2026 · 4:20 PM</div></div><div class="history-pts earn">+350</div></div>
+        <div class="history-item"><div class="history-dot redeem"></div><div class="history-info"><div class="history-desc">Redeemed: Free Brownie Sizzler</div><div class="history-date">5 May 2026 · 8:10 PM</div></div><div class="history-pts redeem">−500</div></div>
+      </div>
+    </div>
+    <div class="spacer"></div>
+    <div class="bottom-nav">
+      <div class="bn-item" onclick="showScreen('home')"><div class="bn-icon">🏠</div><div class="bn-label">HOME</div></div>
+      <div class="bn-item" onclick="showScreen('rewards')"><div class="bn-icon">🎁</div><div class="bn-label">REWARDS</div></div>
+      <div class="bn-item" onclick="showScreen('qr')"><div class="bn-icon">📱</div><div class="bn-label">MY QR</div></div>
+      <div class="bn-item active" onclick="showScreen('history')"><div class="bn-icon">📋</div><div class="bn-label">HISTORY</div></div>
+    </div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="screen" id="screen-profile">
+    <div class="nav">
+      <div><div class="nav-logo">Profile</div><div class="nav-sub">YOUR ACCOUNT</div></div>
+      <div class="nav-icon" onclick="showScreen('home')">✕</div>
+    </div>
+    <div class="profile-header">
+      <div class="avatar">VG</div>
+      <div class="profile-name">Vansh Gupta</div>
+      <div class="profile-tier">✦ GOLD MEMBER</div>
+    </div>
+    <div class="profile-stats">
+      <div class="stat"><div class="stat-val" id="stat-pts">2,340</div><div class="stat-label">POINTS</div></div>
+      <div class="stat"><div class="stat-val">14</div><div class="stat-label">VISITS</div></div>
+      <div class="stat"><div class="stat-val">3</div><div class="stat-label">REDEEMED</div></div>
+    </div>
+    <div class="profile-menu">
+      <div class="menu-item" onclick="showToast('🎂 Free Tiramisu on your birthday!')">
+        <div class="menu-icon">🎂</div><div class="menu-text">BIRTHDAY OFFER</div><div class="menu-arrow">›</div>
+      </div>
+      <div class="menu-item" onclick="showToast('Refer a friend — earn 500 bonus points!')">
+        <div class="menu-icon">👥</div><div class="menu-text">REFER A FRIEND</div><div class="menu-arrow">›</div>
+      </div>
+      <div class="menu-item" onclick="showScreen('history')">
+        <div class="menu-icon">📋</div><div class="menu-text">TRANSACTION HISTORY</div><div class="menu-arrow">›</div>
+      </div>
+      <div class="menu-item" onclick="showToast('Notifications enabled')">
+        <div class="menu-icon">🔔</div><div class="menu-text">NOTIFICATIONS</div><div class="menu-arrow">›</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EARN MODAL -->
+  <div class="modal-overlay" id="earn-modal">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-title">Add a visit</div>
+      <div class="modal-sub">ENTER BILL AMOUNT TO EARN POINTS</div>
+      <div class="input-group">
+        <label class="input-label">BILL AMOUNT (₹)</label>
+        <input class="input-field" type="number" id="bill-input" placeholder="e.g. 850" min="0">
+      </div>
+      <div class="pts-preview" id="pts-preview"></div>
+      <button class="btn-orange" onclick="addPoints()">EARN POINTS</button>
+      <button class="btn-ghost" onclick="closeEarnModal()">CANCEL</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script>
+  let currentPoints = 2340;
+
+  function showScreen(name) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById('screen-' + name).classList.add('active');
+    window.scrollTo(0, 0);
+  }
+
+  function openEarnModal() {
+    document.getElementById('earn-modal').classList.add('show');
+    document.getElementById('bill-input').value = '';
+    document.getElementById('pts-preview').style.display = 'none';
+  }
+
+  function closeEarnModal() {
+    document.getElementById('earn-modal').classList.remove('show');
+  }
+
+  document.getElementById('bill-input').addEventListener('input', function() {
+    const val = parseInt(this.value);
+    const prev = document.getElementById('pts-preview');
+    if (val > 0) {
+      prev.style.display = 'block';
+      prev.textContent = '+' + val.toLocaleString() + ' points to be earned';
+    } else {
+      prev.style.display = 'none';
+    }
+  });
+
+  function addPoints() {
+    const bill = parseInt(document.getElementById('bill-input').value);
+    if (!bill || bill <= 0) { showToast('Enter a valid bill amount'); return; }
+    currentPoints += bill;
+    updateDisplay();
+    const list = document.getElementById('history-list');
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<div class="history-dot earn"></div><div class="history-info"><div class="history-desc">Visit — ₹${bill.toLocaleString()} bill</div><div class="history-date">Just now</div></div><div class="history-pts earn">+${bill.toLocaleString()}</div>`;
+    list.insertBefore(item, list.firstChild);
+    closeEarnModal();
+    showToast('✦ +' + bill.toLocaleString() + ' points earned!');
+  }
+
+  function redeemReward(name, pts) {
+    if (currentPoints < pts) { showToast('Not enough points'); return; }
+    currentPoints -= pts;
+    updateDisplay();
+    const list = document.getElementById('history-list');
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<div class="history-dot redeem"></div><div class="history-info"><div class="history-desc">Redeemed: ${name}</div><div class="history-date">Just now</div></div><div class="history-pts redeem">−${pts.toLocaleString()}</div>`;
+    list.insertBefore(item, list.firstChild);
+    showToast('✦ ' + name + ' redeemed!');
+  }
+
+  function updateDisplay() {
+    const fmt = currentPoints.toLocaleString();
+    document.getElementById('pts-display').textContent = fmt;
+    document.getElementById('balance-display').textContent = fmt + ' pts';
+    document.getElementById('stat-pts').textContent = fmt;
+    const pct = Math.min(Math.max(((currentPoints - 2000) / 1000) * 100, 2), 100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    const rem = Math.max(3000 - currentPoints, 0);
+    document.getElementById('prog-text').textContent = rem > 0 ? rem.toLocaleString() + ' pts to Platinum' : '✦ Platinum achieved!';
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  document.getElementById('earn-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeEarnModal();
+  });
+</script>
+</body>
+</html>

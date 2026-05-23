@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kæffora — Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #C85A1E;
+    --orange-light: #D97840;
+    --orange-pale: #E8956A;
+    --orange-faint: rgba(200,90,30,0.08);
+    --beige: #F5EFE0;
+    --beige-dark: #EAE0C8;
+    --beige-mid: #DDD0B3;
+    --white: #FDFAF4;
+    --surface: #FAF5EB;
+    --surface2: #F0E8D5;
+    --brown: #6B3F1E;
+    --text: #2C1A0E;
+    --text-mid: #6B4A2A;
+    --text-dim: #A08060;
+    --text-muted: #C4A882;
+    --border: rgba(168,100,40,0.15);
+    --border-mid: rgba(168,100,40,0.25);
+    --green: #4A7A4A;
+    --green-bg: rgba(74,122,74,0.1);
+    --red: #A03030;
+    --red-bg: rgba(160,48,48,0.08);
+    --sidebar-w: 220px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--beige); color:var(--text); font-family:'Jost',sans-serif; min-height:100vh; display:flex; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--white);
+    border-right: 0.5px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top:0; left:0; bottom:0;
+    z-index: 10;
+  }
+
+  .sidebar-logo {
+    padding: 24px 22px 20px;
+    border-bottom: 0.5px solid var(--border);
+  }
+  .sidebar-logo-text { font-family:'Playfair Display',serif; font-size:20px; color:var(--orange); letter-spacing:0.02em; }
+  .sidebar-logo-sub { font-size:8px; letter-spacing:0.3em; color:var(--text-muted); margin-top:2px; }
+
+  .sidebar-nav { flex:1; padding:16px 12px; }
+  .nav-section-label { font-size:8px; letter-spacing:0.3em; color:var(--text-muted); padding:8px 10px 6px; }
+  .nav-item {
+    display:flex; align-items:center; gap:10px;
+    padding:10px 12px; border-radius:10px;
+    cursor:pointer; margin-bottom:2px;
+    transition:background 0.15s;
+    font-size:12px; letter-spacing:0.08em; color:var(--text-mid);
+  }
+  .nav-item:hover { background:var(--beige); }
+  .nav-item.active { background:var(--orange-faint); color:var(--orange); }
+  .nav-item.active .nav-dot { background:var(--orange); }
+  .nav-dot { width:6px; height:6px; border-radius:50%; background:var(--beige-mid); flex-shrink:0; }
+  .nav-icon { font-size:15px; width:20px; text-align:center; }
+
+  .sidebar-footer {
+    padding:16px 20px;
+    border-top:0.5px solid var(--border);
+    font-size:11px; color:var(--text-dim);
+  }
+  .sidebar-footer strong { color:var(--text-mid); display:block; margin-bottom:2px; font-weight:500; }
+
+  /* ── MAIN ── */
+  .main {
+    margin-left: var(--sidebar-w);
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:100vh;
+  }
+
+  /* TOPBAR */
+  .topbar {
+    background: rgba(245,239,224,0.9);
+    backdrop-filter: blur(10px);
+    border-bottom: 0.5px solid var(--border);
+    padding: 14px 28px;
+    display:flex; align-items:center; justify-content:space-between;
+    position:sticky; top:0; z-index:9;
+  }
+  .topbar-title { font-family:'Playfair Display',serif; font-size:20px; font-weight:400; color:var(--text); }
+  .topbar-date { font-size:11px; color:var(--text-dim); letter-spacing:0.05em; }
+  .topbar-right { display:flex; align-items:center; gap:12px; }
+  .topbar-badge { background:var(--orange); color:#fff; font-size:10px; letter-spacing:0.15em; padding:6px 14px; border-radius:20px; cursor:pointer; }
+
+  /* CONTENT */
+  .content { padding:24px 28px; flex:1; }
+
+  /* PANELS */
+  .panel { display:none; animation:fadeUp 0.3s ease; }
+  .panel.active { display:block; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* STAT CARDS */
+  .stats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+  .stat-card {
+    background:var(--white);
+    border:0.5px solid var(--border);
+    border-radius:16px;
+    padding:20px;
+  }
+  .stat-card.highlight { background:var(--orange); border-color:var(--orange); }
+  .stat-label { font-size:9px; letter-spacing:0.25em; color:var(--text-muted); margin-bottom:10px; }
+  .stat-card.highlight .stat-label { color:rgba(255,255,255,0.65); }
+  .stat-val { font-family:'Playfair Display',serif; font-size:32px; font-weight:400; color:var(--text); line-height:1; margin-bottom:6px; }
+  .stat-card.highlight .stat-val { color:#fff; }
+  .stat-change { font-size:10px; letter-spacing:0.05em; }
+  .stat-change.up { color:var(--green); }
+  .stat-change.dn { color:var(--red); }
+  .stat-card.highlight .stat-change { color:rgba(255,255,255,0.75); }
+
+  /* GRID 2COL */
+  .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:14px; }
+  .grid-3 { display:grid; grid-template-columns:1.5fr 1fr; gap:14px; margin-bottom:14px; }
+
+  /* CARD */
+  .card {
+    background:var(--white);
+    border:0.5px solid var(--border);
+    border-radius:16px;
+    overflow:hidden;
+  }
+  .card-header {
+    padding:16px 20px 12px;
+    border-bottom:0.5px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .card-title { font-size:11px; letter-spacing:0.2em; color:var(--text-mid); font-weight:500; }
+  .card-action { font-size:10px; color:var(--orange); cursor:pointer; letter-spacing:0.05em; }
+  .card-body { padding:16px 20px; }
+
+  /* BAR CHART */
+  .bar-chart { display:flex; align-items:flex-end; gap:8px; height:120px; }
+  .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .bar { width:100%; border-radius:6px 6px 0 0; background:var(--orange-faint); border:0.5px solid rgba(200,90,30,0.2); position:relative; transition:height 0.5s ease; cursor:pointer; }
+  .bar:hover { background:rgba(200,90,30,0.15); }
+  .bar.active-bar { background:var(--orange); border-color:var(--orange); }
+  .bar-label { font-size:9px; color:var(--text-muted); letter-spacing:0.05em; }
+  .bar-val { font-size:9px; color:var(--orange); font-weight:500; }
+
+  /* MINI TABLE */
+  .mini-table { width:100%; }
+  .mini-table tr { border-bottom:0.5px solid var(--border); }
+  .mini-table tr:last-child { border-bottom:none; }
+  .mini-table td { padding:10px 0; font-size:12px; vertical-align:middle; }
+  .mini-table td:last-child { text-align:right; }
+  .member-avatar { width:28px; height:28px; border-radius:50%; background:var(--orange-faint); border:0.5px solid var(--border-mid); display:inline-flex; align-items:center; justify-content:center; font-size:11px; color:var(--orange); font-family:'Playfair Display',serif; margin-right:8px; vertical-align:middle; }
+  .member-name { color:var(--text); font-weight:400; }
+  .member-pts { color:var(--orange); font-family:'Playfair Display',serif; font-size:14px; }
+  .member-tier { font-size:9px; letter-spacing:0.1em; padding:2px 8px; border-radius:10px; }
+  .tier-gold { background:rgba(200,90,30,0.1); color:var(--orange); }
+  .tier-silver { background:var(--surface2); color:var(--text-dim); }
+  .tier-platinum { background:rgba(74,74,120,0.1); color:#4A4A78; }
+
+  /* ACTIVITY FEED */
+  .activity-list { display:flex; flex-direction:column; gap:0; }
+  .activity-item { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:0.5px solid var(--border); }
+  .activity-item:last-child { border-bottom:none; }
+  .activity-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .activity-dot.earn { background:var(--orange); }
+  .activity-dot.redeem { background:var(--green); }
+  .activity-dot.new { background:#4A6A8A; }
+  .activity-info { flex:1; }
+  .activity-desc { font-size:12px; color:var(--text-mid); }
+  .activity-time { font-size:10px; color:var(--text-muted); margin-top:1px; }
+  .activity-amt { font-size:12px; color:var(--text-dim); font-family:'Playfair Display',serif; }
+
+  /* DONUT CHART */
+  .donut-wrap { display:flex; align-items:center; gap:20px; }
+  .donut-svg { flex-shrink:0; }
+  .donut-legend { display:flex; flex-direction:column; gap:8px; }
+  .legend-item { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); }
+  .legend-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+  /* MEMBERS TABLE (full panel) */
+  .members-table { width:100%; border-collapse:collapse; }
+  .members-table th { font-size:9px; letter-spacing:0.2em; color:var(--text-muted); padding:10px 16px; text-align:left; border-bottom:0.5px solid var(--border); font-weight:500; }
+  .members-table td { padding:12px 16px; font-size:12px; color:var(--text-mid); border-bottom:0.5px solid var(--border); vertical-align:middle; }
+  .members-table tr:last-child td { border-bottom:none; }
+  .members-table tr:hover td { background:var(--surface); }
+  .tbl-name { color:var(--text); font-weight:400; display:flex; align-items:center; gap:8px; }
+  .tbl-pts { color:var(--orange); font-family:'Playfair Display',serif; font-size:14px; }
+
+  /* SEARCH */
+  .search-bar { display:flex; gap:10px; margin-bottom:16px; }
+  .search-input { flex:1; background:var(--white); border:0.5px solid var(--border-mid); border-radius:10px; padding:10px 14px; font-family:'Jost',sans-serif; font-size:13px; color:var(--text); outline:none; }
+  .search-input:focus { border-color:var(--orange); }
+  .search-input::placeholder { color:var(--text-muted); }
+  .filter-btn { background:var(--white); border:0.5px solid var(--border-mid); border-radius:10px; padding:10px 16px; font-size:11px; letter-spacing:0.1em; color:var(--text-dim); cursor:pointer; transition:border-color 0.2s; }
+  .filter-btn:hover { border-color:var(--orange-pale); }
+
+  /* ADD PTS MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(44,26,14,0.5); backdrop-filter:blur(4px); z-index:100; align-items:center; justify-content:center; }
+  .modal-overlay.show { display:flex; }
+  .modal-box { background:var(--white); border-radius:20px; padding:28px; width:100%; max-width:380px; animation:fadeUp 0.3s ease; }
+  .modal-title { font-family:'Playfair Display',serif; font-size:22px; margin-bottom:4px; }
+  .modal-sub { font-size:10px; letter-spacing:0.2em; color:var(--text-muted); margin-bottom:22px; }
+  .input-label { font-size:9px; letter-spacing:0.25em; color:var(--text-dim); margin-bottom:7px; display:block; }
+  .input-field { width:100%; background:var(--beige); border:0.5px solid var(--border-mid); border-radius:10px; padding:12px 14px; font-family:'Jost',sans-serif; font-size:13px; color:var(--text); outline:none; margin-bottom:12px; }
+  .input-field:focus { border-color:var(--orange); }
+  .btn-orange { background:var(--orange); border:none; border-radius:10px; padding:13px 20px; font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.25em; color:#fff; cursor:pointer; width:100%; margin-bottom:8px; transition:opacity 0.2s; }
+  .btn-orange:hover { opacity:0.9; }
+  .btn-ghost { background:transparent; border:0.5px solid var(--border-mid); border-radius:10px; padding:11px 20px; font-family:'Jost',sans-serif; font-size:10px; letter-spacing:0.25em; color:var(--text-dim); cursor:pointer; width:100%; }
+
+  /* TOAST */
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--orange); border-radius:12px; padding:12px 20px; font-size:11px; letter-spacing:0.1em; color:#fff; opacity:0; transition:all 0.3s; z-index:200; pointer-events:none; }
+  .toast.show { opacity:1; }
+
+  /* REWARD TOGGLE */
+  .reward-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:0.5px solid var(--border); }
+  .reward-row:last-child { border-bottom:none; }
+  .reward-info-col { }
+  .reward-name-sm { font-size:13px; color:var(--text); margin-bottom:2px; }
+  .reward-pts-sm { font-size:10px; color:var(--text-muted); }
+  .toggle { width:36px; height:20px; background:var(--beige-dark); border-radius:20px; position:relative; cursor:pointer; transition:background 0.2s; border:0.5px solid var(--border-mid); }
+  .toggle.on { background:var(--orange); border-color:var(--orange); }
+  .toggle-knob { width:14px; height:14px; background:#fff; border-radius:50%; position:absolute; top:2px; left:3px; transition:left 0.2s; box-shadow:0 1px 3px rgba(0,0,0,0.15); }
+  .toggle.on .toggle-knob { left:19px; }
+
+  .section-divider { font-size:9px; letter-spacing:0.3em; color:var(--text-muted); margin:20px 0 12px; padding-bottom:6px; border-bottom:0.5px solid var(--border); }
+
+  /* RESPONSIVE hint */
+  @media(max-width:900px) {
+    .stats-grid { grid-template-columns:1fr 1fr; }
+    .grid-2, .grid-3 { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-text">Kæffora</div>
+    <div class="sidebar-logo-sub">ADMIN PANEL</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section-label">OVERVIEW</div>
+    <div class="nav-item active" onclick="showPanel('dashboard',this)">
+      <span class="nav-icon">📊</span> Dashboard
+      <div class="nav-dot" style="margin-left:auto"></div>
+    </div>
+    <div class="nav-item" onclick="showPanel('members',this)">
+      <span class="nav-icon">👥</span> Members
+    </div>
+    <div class="nav-item" onclick="showPanel('activity',this)">
+      <span class="nav-icon">📋</span> Activity
+    </div>
+    <div class="nav-section-label" style="margin-top:12px">MANAGE</div>
+    <div class="nav-item" onclick="showPanel('rewards',this)">
+      <span class="nav-icon">🎁</span> Rewards
+    </div>
+    <div class="nav-item" onclick="showPanel('addpoints',this)">
+      <span class="nav-icon">➕</span> Add Points
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <strong>Aman Kumar</strong>
+    kaeffora.com · Karnal
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="topbar-title" id="panel-title">Dashboard</div>
+      <div class="topbar-date">Saturday, 23 May 2026</div>
+    </div>
+    <div class="topbar-right">
+      <div class="topbar-badge" onclick="openAddPts()">+ Add Points</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD PANEL -->
+    <div class="panel active" id="panel-dashboard">
+
+      <div class="stats-grid">
+        <div class="stat-card highlight">
+          <div class="stat-label">TOTAL MEMBERS</div>
+          <div class="stat-val">247</div>
+          <div class="stat-change">↑ 18 this month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">POINTS ISSUED</div>
+          <div class="stat-val">1.2L</div>
+          <div class="stat-change up">↑ 12% vs last month</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">REWARDS REDEEMED</div>
+          <div class="stat-val">84</div>
+          <div class="stat-change up">↑ 7 this week</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">AVG BILL (₹)</div>
+          <div class="stat-val">487</div>
+          <div class="stat-change up">↑ ₹43 vs last month</div>
+        </div>
+      </div>
+
+      <div class="grid-3">
+        <!-- BAR CHART -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">POINTS ISSUED — MAY 2026</div>
+          </div>
+          <div class="card-body">
+            <div class="bar-chart" id="bar-chart">
+              <!-- filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- TIER BREAKDOWN -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">MEMBER TIERS</div>
+          </div>
+          <div class="card-body">
+            <div class="donut-wrap">
+              <svg class="donut-svg" width="90" height="90" viewBox="0 0 90 90">
+                <circle cx="45" cy="45" r="35" fill="none" stroke="var(--beige-dark)" stroke-width="12"/>
+                <!-- Gold: 58% = 219.9 of 376.99 -->
+                <circle cx="45" cy="45" r="35" fill="none" stroke="var(--orange)" stroke-width="12" stroke-dasharray="219.9 157.1" stroke-dashoffset="0" transform="rotate(-90 45 45)"/>
+                <!-- Silver: 30% -->
+                <circle cx="45" cy="45" r="35" fill="none" stroke="var(--beige-mid)" stroke-width="12" stroke-dasharray="113.1 263.9" stroke-dashoffset="-219.9" transform="rotate(-90 45 45)"/>
+                <!-- Platinum: 12% -->
+                <circle cx="45" cy="45" r="35" fill="none" stroke="#7A7AB0" stroke-width="12" stroke-dasharray="45.2 331.8" stroke-dashoffset="-333" transform="rotate(-90 45 45)"/>
+                <text x="45" y="49" text-anchor="middle" font-family="'Playfair Display',serif" font-size="13" fill="var(--orange)">247</text>
+              </svg>
+              <div class="donut-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--orange)"></div>Gold — 143</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--beige-mid)"></div>Silver — 74</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#7A7AB0"></div>Platinum — 30</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <!-- TOP MEMBERS -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">TOP MEMBERS</div>
+            <div class="card-action" onclick="showPanel('members',null)">View all →</div>
+          </div>
+          <div class="card-body" style="padding:8px 20px">
+            <table class="mini-table">
+              <tr>
+                <td><span class="member-avatar">RS</span><span class="member-name">Rohit Sharma</span></td>
+                <td><span class="member-tier tier-platinum">Platinum</span></td>
+                <td><span class="member-pts">5,840</span></td>
+              </tr>
+              <tr>
+                <td><span class="member-avatar">PG</span><span class="member-name">Priya Gupta</span></td>
+                <td><span class="member-tier tier-platinum">Platinum</span></td>
+                <td><span class="member-pts">4,210</span></td>
+              </tr>
+              <tr>
+                <td><span class="member-avatar">AM</span><span class="member-name">Arjun Malik</span></td>
+                <td><span class="member-tier tier-gold">Gold</span></td>
+                <td><span class="member-pts">2,980</span></td>
+              </tr>
+              <tr>
+                <td><span class="member-avatar">NS</span><span class="member-name">Neha Singh</span></td>
+                <td><span class="member-tier tier-gold">Gold</span></td>
+                <td><span class="member-pts">2,340</span></td>
+              </tr>
+              <tr>
+                <td><span class="member-avatar">VK</span><span class="member-name">Vijay Kumar</span></td>
+                <td><span class="member-tier tier-gold">Gold</span></td>
+                <td><span class="member-pts">1,890</span></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- RECENT ACTIVITY -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">RECENT ACTIVITY</div>
+            <div class="card-action" onclick="showPanel('activity',null)">View all →</div>
+          </div>
+          <div class="card-body" style="padding:4px 20px">
+            <div class="activity-list">
+              <div class="activity-item">
+                <div class="activity-dot earn"></div>
+                <div class="activity-info">
+                  <div class="activity-desc">Rohit Sharma earned pts</div>
+                  <div class="activity-time">2 min ago · ₹680 bill</div>
+                </div>
+                <div class="activity-amt">+680</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot redeem"></div>
+                <div class="activity-info">
+                  <div class="activity-desc">Priya Gupta redeemed</div>
+                  <div class="activity-time">18 min ago · Free Espresso</div>
+                </div>
+                <div class="activity-amt" style="color:var(--green)">−200</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot new"></div>
+                <div class="activity-info">
+                  <div class="activity-desc">New member joined</div>
+                  <div class="activity-time">1 hr ago · Simran Kaur</div>
+                </div>
+                <div class="activity-amt">+50</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot earn"></div>
+                <div class="activity-info">
+                  <div class="activity-desc">Arjun Malik earned pts</div>
+                  <div class="activity-time">2 hr ago · ₹1,240 bill</div>
+                </div>
+                <div class="activity-amt">+1,240</div>
+              </div>
+              <div class="activity-item">
+                <div class="activity-dot redeem"></div>
+                <div class="activity-info">
+                  <div class="activity-desc">Vijay Kumar redeemed</div>
+                  <div class="activity-time">3 hr ago · Free Waffle</div>
+                </div>
+                <div class="activity-amt" style="color:var(--green)">−350</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /dashboard -->
+
+    <!-- MEMBERS PANEL -->
+    <div class="panel" id="panel-members">
+      <div class="search-bar">
+        <input class="search-input" placeholder="Search member by name or phone…" id="member-search" oninput="filterMembers()">
+        <button class="filter-btn">Gold ▾</button>
+        <button class="filter-btn">Export</button>
+      </div>
+      <div class="card">
+        <table class="members-table" id="members-table">
+          <thead>
+            <tr>
+              <th>MEMBER</th>
+              <th>PHONE</th>
+              <th>TIER</th>
+              <th>POINTS</th>
+              <th>VISITS</th>
+              <th>JOINED</th>
+              <th>ACTION</th>
+            </tr>
+          </thead>
+          <tbody id="members-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ACTIVITY PANEL -->
+    <div class="panel" id="panel-activity">
+      <div class="card">
+        <div class="card-header"><div class="card-title">ALL ACTIVITY — MAY 2026</div></div>
+        <div style="padding:0 20px">
+          <div class="activity-list" id="full-activity"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REWARDS PANEL -->
+    <div class="panel" id="panel-rewards">
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><div class="card-title">ACTIVE REWARDS</div></div>
+          <div class="card-body">
+            <div class="section-divider">BEVERAGES</div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Espresso</div>
+                <div class="reward-pts-sm">200 pts · Worth ₹119</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Masala Chai</div>
+                <div class="reward-pts-sm">100 pts · Worth ₹99</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Cold Brew</div>
+                <div class="reward-pts-sm">250 pts · Worth ₹199</div>
+              </div>
+              <div class="toggle" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="section-divider">FOOD</div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Waffle</div>
+                <div class="reward-pts-sm">350 pts · Worth ₹219</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Brownie Sizzler</div>
+                <div class="reward-pts-sm">500 pts · Worth ₹279</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Smash Burger</div>
+                <div class="reward-pts-sm">800 pts · Worth ₹249</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Free Margherita Pizza</div>
+                <div class="reward-pts-sm">3,000 pts · Worth ₹299</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+            <div class="section-divider">PREMIUM</div>
+            <div class="reward-row">
+              <div class="reward-info-col">
+                <div class="reward-name-sm">Private Dining Experience</div>
+                <div class="reward-pts-sm">5,000 pts · Platinum only</div>
+              </div>
+              <div class="toggle on" onclick="toggleReward(this)"><div class="toggle-knob"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">REDEMPTION STATS</div></div>
+          <div class="card-body">
+            <div style="margin-bottom:16px">
+              <div style="font-size:9px;letter-spacing:0.2em;color:var(--text-muted);margin-bottom:4px">MOST REDEEMED THIS MONTH</div>
+              <div style="font-family:'Playfair Display',serif;font-size:18px;color:var(--orange)">Free Espresso</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:2px">32 times · 200 pts each</div>
+            </div>
+            <div style="margin-bottom:16px">
+              <div style="font-size:9px;letter-spacing:0.2em;color:var(--text-muted);margin-bottom:4px">TOTAL REDEEMED (MAY)</div>
+              <div style="font-family:'Playfair Display',serif;font-size:28px;color:var(--text)">84</div>
+            </div>
+            <div>
+              <div style="font-size:9px;letter-spacing:0.2em;color:var(--text-muted);margin-bottom:10px">BY REWARD TYPE</div>
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px"><span>Espresso</span><span>32</span></div>
+                  <div style="height:4px;background:var(--beige-dark);border-radius:4px"><div style="height:100%;width:76%;background:var(--orange);border-radius:4px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px"><span>Waffle</span><span>21</span></div>
+                  <div style="height:4px;background:var(--beige-dark);border-radius:4px"><div style="height:100%;width:50%;background:var(--orange-pale);border-radius:4px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px"><span>Brownie Sizzler</span><span>18</span></div>
+                  <div style="height:4px;background:var(--beige-dark);border-radius:4px"><div style="height:100%;width:43%;background:var(--orange-pale);border-radius:4px"></div></div>
+                </div>
+                <div>
+                  <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px"><span>Smash Burger</span><span>13</span></div>
+                  <div style="height:4px;background:var(--beige-dark);border-radius:4px"><div style="height:100%;width:31%;background:var(--beige-mid);border-radius:4px"></div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD POINTS PANEL -->
+    <div class="panel" id="panel-addpoints">
+      <div style="max-width:440px">
+        <div class="card">
+          <div class="card-header"><div class="card-title">ADD POINTS TO MEMBER</div></div>
+          <div class="card-body">
+            <div style="margin-bottom:14px">
+              <label class="input-label">MEMBER PHONE / NAME</label>
+              <input class="input-field" placeholder="Search member…" style="margin-bottom:0">
+            </div>
+            <div style="margin-bottom:14px">
+              <label class="input-label">BILL AMOUNT (₹)</label>
+              <input class="input-field" type="number" placeholder="e.g. 650" id="admin-bill" oninput="calcPts()" style="margin-bottom:0">
+            </div>
+            <div id="pts-calc" style="display:none;background:var(--orange-faint);border:0.5px solid rgba(200,90,30,0.2);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-family:'Playfair Display',serif;font-size:18px;color:var(--orange);text-align:center"></div>
+            <div style="margin-bottom:14px">
+              <label class="input-label">NOTE (OPTIONAL)</label>
+              <input class="input-field" placeholder="e.g. Dine-in lunch" style="margin-bottom:0">
+            </div>
+            <button class="btn-orange" onclick="showToast('Points added successfully!')">ADD POINTS</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ADD POINTS MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal-box">
+    <div class="modal-title">Add Points</div>
+    <div class="modal-sub">MANUALLY ADD POINTS TO A MEMBER</div>
+    <label class="input-label">MEMBER PHONE / NAME</label>
+    <input class="input-field" placeholder="Search member…">
+    <label class="input-label">BILL AMOUNT (₹)</label>
+    <input class="input-field" type="number" placeholder="e.g. 650" id="modal-bill" oninput="calcModalPts()">
+    <div id="modal-pts-calc" style="display:none;background:var(--orange-faint);border:0.5px solid rgba(200,90,30,0.2);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-family:'Playfair Display',serif;font-size:16px;color:var(--orange);text-align:center"></div>
+    <button class="btn-orange" onclick="showToast('Points added!');closeModal()">ADD POINTS</button>
+    <button class="btn-ghost" onclick="closeModal()">CANCEL</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // DATA
+  const members = [
+    {name:'Rohit Sharma',phone:'98765-43210',tier:'Platinum',pts:5840,visits:38,joined:'Jan 2026'},
+    {name:'Priya Gupta',phone:'87654-32109',tier:'Platinum',pts:4210,visits:29,joined:'Jan 2026'},
+    {name:'Arjun Malik',phone:'76543-21098',tier:'Gold',pts:2980,visits:21,joined:'Feb 2026'},
+    {name:'Neha Singh',phone:'65432-10987',tier:'Gold',pts:2340,visits:14,joined:'Feb 2026'},
+    {name:'Vijay Kumar',phone:'54321-09876',tier:'Gold',pts:1890,visits:12,joined:'Mar 2026'},
+    {name:'Simran Kaur',phone:'43210-98765',tier:'Silver',pts:980,visits:7,joined:'Apr 2026'},
+    {name:'Rahul Verma',phone:'32109-87654',tier:'Silver',pts:760,visits:5,joined:'Apr 2026'},
+    {name:'Divya Sharma',phone:'21098-76543',tier:'Silver',pts:520,visits:4,joined:'May 2026'},
+    {name:'Karan Mehta',phone:'10987-65432',tier:'Silver',pts:340,visits:3,joined:'May 2026'},
+    {name:'Pooja Agarwal',phone:'09876-54321',tier:'Silver',pts:180,visits:2,joined:'May 2026'},
+  ];
+
+  const activities = [
+    {type:'earn',desc:'Rohit Sharma earned pts',sub:'2 min ago · ₹680 bill',amt:'+680'},
+    {type:'redeem',desc:'Priya Gupta redeemed',sub:'18 min ago · Free Espresso',amt:'−200'},
+    {type:'new',desc:'New member joined',sub:'1 hr ago · Simran Kaur',amt:'+50'},
+    {type:'earn',desc:'Arjun Malik earned pts',sub:'2 hr ago · ₹1,240 bill',amt:'+1,240'},
+    {type:'redeem',desc:'Vijay Kumar redeemed',sub:'3 hr ago · Free Waffle',amt:'−350'},
+    {type:'earn',desc:'Neha Singh earned pts',sub:'4 hr ago · ₹490 bill',amt:'+490'},
+    {type:'earn',desc:'Karan Mehta earned pts',sub:'Yesterday · ₹340 bill',amt:'+340'},
+    {type:'new',desc:'New member joined',sub:'Yesterday · Pooja Agarwal',amt:'+50'},
+    {type:'redeem',desc:'Rohit Sharma redeemed',sub:'2 days ago · Brownie Sizzler',amt:'−500'},
+    {type:'earn',desc:'Divya Sharma earned pts',sub:'2 days ago · ₹520 bill',amt:'+520'},
+  ];
+
+  const barData = [
+    {day:'1',val:1200},{day:'5',val:1800},{day:'8',val:1400},{day:'10',val:2200},
+    {day:'12',val:1600},{day:'15',val:3100},{day:'18',val:2400},{day:'20',val:1900},
+    {day:'22',val:2800},{day:'23',val:1200},
+  ];
+
+  // BUILD BAR CHART
+  const barChart = document.getElementById('bar-chart');
+  const maxVal = Math.max(...barData.map(d=>d.val));
+  barData.forEach((d,i) => {
+    const h = Math.max((d.val/maxVal)*100,6);
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.innerHTML = `
+      <div class="bar-val">${d.val>=1000?Math.round(d.val/100)/10+'k':d.val}</div>
+      <div class="bar ${i===barData.length-1?'active-bar':''}" style="height:${h}px" title="${d.val} pts on ${d.day} May"></div>
+      <div class="bar-label">${d.day}</div>
+    `;
+    barChart.appendChild(col);
+  });
+
+  // BUILD MEMBERS TABLE
+  function buildMembers(data) {
+    const tbody = document.getElementById('members-tbody');
+    tbody.innerHTML = '';
+    data.forEach(m => {
+      const initials = m.name.split(' ').map(n=>n[0]).join('');
+      const tierClass = m.tier==='Platinum'?'tier-platinum':m.tier==='Gold'?'tier-gold':'tier-silver';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><div class="tbl-name"><div class="member-avatar">${initials}</div>${m.name}</div></td>
+        <td>${m.phone}</td>
+        <td><span class="member-tier ${tierClass}">${m.tier}</span></td>
+        <td><span class="tbl-pts">${m.pts.toLocaleString()}</span></td>
+        <td>${m.visits}</td>
+        <td>${m.joined}</td>
+        <td><span style="font-size:11px;color:var(--orange);cursor:pointer" onclick="showToast('Opened ${m.name}')">View →</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+  buildMembers(members);
+
+  function filterMembers() {
+    const q = document.getElementById('member-search').value.toLowerCase();
+    buildMembers(members.filter(m=>m.name.toLowerCase().includes(q)||m.phone.includes(q)));
+  }
+
+  // BUILD ACTIVITY
+  const actList = document.getElementById('full-activity');
+  activities.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'activity-item';
+    const amtColor = a.type==='redeem'?'color:var(--green)':'color:var(--text-dim)';
+    div.innerHTML = `
+      <div class="activity-dot ${a.type}"></div>
+      <div class="activity-info">
+        <div class="activity-desc">${a.desc}</div>
+        <div class="activity-time">${a.sub}</div>
+      </div>
+      <div class="activity-amt" style="${amtColor}">${a.amt}</div>
+    `;
+    actList.appendChild(div);
+  });
+
+  // PANEL SWITCHING
+  function showPanel(name, el) {
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    document.getElementById('panel-'+name).classList.add('active');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    if(el) el.classList.add('active');
+    const titles = {dashboard:'Dashboard',members:'Members',activity:'Activity Log',rewards:'Manage Rewards',addpoints:'Add Points'};
+    document.getElementById('panel-title').textContent = titles[name]||name;
+  }
+
+  // TOGGLES
+  function toggleReward(el) {
+    el.classList.toggle('on');
+    showToast(el.classList.contains('on')?'Reward enabled':'Reward disabled');
+  }
+
+  // ADD PTS
+  function calcPts() {
+    const v = parseInt(document.getElementById('admin-bill').value);
+    const el = document.getElementById('pts-calc');
+    if(v>0){el.style.display='block';el.textContent='+'+v.toLocaleString()+' points will be added';}
+    else el.style.display='none';
+  }
+
+  function calcModalPts() {
+    const v = parseInt(document.getElementById('modal-bill').value);
+    const el = document.getElementById('modal-pts-calc');
+    if(v>0){el.style.display='block';el.textContent='+'+v.toLocaleString()+' points will be added';}
+    else el.style.display='none';
+  }
+
+  function openAddPts() { document.getElementById('add-modal').classList.add('show'); }
+  function closeModal() { document.getElementById('add-modal').classList.remove('show'); }
+  document.getElementById('add-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),2500);
+  }
+</script>
+</body>
+</html>
