@@ -87,12 +87,8 @@
   .bn-label{font-size:8px;letter-spacing:0.2em;color:var(--text-muted)}
   .bn-item.active .bn-label{color:var(--orange);font-weight:500}
   .qr-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;gap:18px}
-  .qr-box{width:210px;height:210px;background:var(--white);border:0.5px solid var(--border-mid);border-radius:20px;display:flex;align-items:center;justify-content:center;position:relative}
-  .qr-corner{position:absolute;width:18px;height:18px;border-color:var(--orange);border-style:solid}
-  .qr-corner.tl{top:12px;left:12px;border-width:2px 0 0 2px}
-  .qr-corner.tr{top:12px;right:12px;border-width:2px 2px 0 0}
-  .qr-corner.bl{bottom:12px;left:12px;border-width:0 0 2px 2px}
-  .qr-corner.br{bottom:12px;right:12px;border-width:0 2px 2px 0}
+  .qr-box{width:210px;height:210px;background:var(--white);border:0.5px solid var(--border-mid);border-radius:20px;display:flex;align-items:center;justify-content:center;padding:16px}
+  #qr-code canvas, #qr-code img{border-radius:8px}
   .toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--orange);border-radius:30px;padding:10px 20px;font-size:11px;letter-spacing:0.12em;color:#fff;opacity:0;transition:all 0.3s;z-index:200;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .profile-header{padding:28px 20px 20px;text-align:center;border-bottom:0.5px solid var(--border)}
@@ -159,8 +155,8 @@
     <div class="section">
       <div class="section-title">QUICK ACTIONS</div>
       <div class="quick-actions">
-        <div class="qa-btn" onclick="showScreen('qr')">
-          <div class="qa-icon">☕</div><div class="qa-label">EARN POINTS</div><div class="qa-sub">Show QR to staff</div>
+        <div class="qa-btn" onclick="showToast('₹10 spent = 1 pt · 50 pts = Free Chai · Valid at both brands!')">
+          <div class="qa-icon">💡</div><div class="qa-label">HOW IT WORKS</div><div class="qa-sub">Points & tiers</div>
         </div>
         <div class="qa-btn" onclick="showScreen('rewards')">
           <div class="qa-icon">🎁</div><div class="qa-label">REDEEM</div><div class="qa-sub">Use your points</div>
@@ -314,11 +310,7 @@
     <div class="qr-wrap">
       <div style="font-family:'Playfair Display',serif;font-size:13px;letter-spacing:0.2em;color:var(--text-dim);text-align:center;font-style:italic">Vansh Gupta · Gold Member</div>
       <div class="qr-box">
-        <div class="qr-corner tl"></div><div class="qr-corner tr"></div><div class="qr-corner bl"></div><div class="qr-corner br"></div>
-        <div style="text-align:center">
-          <div style="font-size:64px;opacity:0.15;color:var(--orange)">▦</div>
-          <div style="font-size:9px;letter-spacing:0.2em;color:var(--text-muted);margin-top:4px">KFVG·2026·8810</div>
-        </div>
+        <div id="qr-code"></div>
       </div>
       <div style="font-size:11px;letter-spacing:0.08em;color:var(--text-dim);text-align:center;line-height:1.7">Show this QR after your order<br>to earn points automatically.</div>
       <div style="background:var(--white);border:0.5px solid var(--border-mid);border-radius:14px;padding:16px 24px;text-align:center;width:100%">
@@ -411,14 +403,28 @@
   <div class="toast" id="toast"></div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   const RATE = 10;
   let currentPoints = 234;
+  let qrGenerated = false;
 
   function showScreen(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + name).classList.add('active');
     window.scrollTo(0, 0);
+    // Generate QR once when QR screen is shown
+    if (name === 'qr' && !qrGenerated) {
+      new QRCode(document.getElementById('qr-code'), {
+        text: 'KAEFFORA|KFVG-8810|VANSH-GUPTA|GOLD',
+        width: 174,
+        height: 174,
+        colorDark: '#2C1A0E',
+        colorLight: '#FDFAF4',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      qrGenerated = true;
+    }
   }
 
   function redeemReward(name, pts) {
