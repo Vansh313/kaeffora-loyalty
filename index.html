@@ -93,26 +93,6 @@
   .qr-corner.tr{top:12px;right:12px;border-width:2px 2px 0 0}
   .qr-corner.bl{bottom:12px;left:12px;border-width:0 0 2px 2px}
   .qr-corner.br{bottom:12px;right:12px;border-width:0 2px 2px 0}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(44,26,14,0.6);backdrop-filter:blur(4px);z-index:100;align-items:flex-end;justify-content:center}
-  .modal-overlay.show{display:flex}
-  .modal{background:var(--white);border-radius:24px 24px 0 0;padding:28px 24px 36px;width:100%;max-width:420px;animation:slideUp 0.35s cubic-bezier(0.4,0,0.2,1)}
-  @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-  .modal-handle{width:36px;height:3px;background:var(--beige-dark);border-radius:2px;margin:0 auto 24px}
-  .modal-title{font-family:'Playfair Display',serif;font-size:24px;color:var(--text);margin-bottom:4px}
-  .modal-sub{font-size:10px;letter-spacing:0.2em;color:var(--text-muted);margin-bottom:8px}
-  .modal-rate{font-size:12px;color:var(--orange);margin-bottom:20px;font-weight:500}
-  .input-label{font-size:9px;letter-spacing:0.25em;color:var(--text-dim);margin-bottom:8px;display:block}
-  .input-field{width:100%;background:var(--beige);border:0.5px solid var(--border-mid);border-radius:10px;padding:13px 16px;color:var(--text);font-family:'Jost',sans-serif;font-size:14px;outline:none;transition:border-color 0.2s}
-  .input-field:focus{border-color:var(--orange)}
-  .input-field::placeholder{color:var(--text-muted)}
-  .pts-preview{display:none;background:rgba(200,90,30,0.08);border:0.5px solid rgba(200,90,30,0.2);border-radius:10px;padding:12px 16px;margin-bottom:8px;text-align:center}
-  .pts-preview-big{font-family:'Playfair Display',serif;font-size:22px;color:var(--orange)}
-  .pts-preview-sub{font-size:10px;color:var(--text-dim);margin-top:2px;letter-spacing:0.05em}
-  .btn-orange{width:100%;padding:15px;background:var(--orange);border:none;border-radius:12px;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:0.3em;color:#fff;font-weight:500;cursor:pointer;margin-top:8px;transition:opacity 0.2s,transform 0.1s}
-  .btn-orange:hover{opacity:0.9}
-  .btn-orange:active{transform:scale(0.98)}
-  .btn-ghost{width:100%;padding:13px;background:transparent;border:0.5px solid var(--border-mid);border-radius:12px;font-family:'Jost',sans-serif;font-size:10px;letter-spacing:0.25em;color:var(--text-dim);cursor:pointer;margin-top:8px;transition:border-color 0.2s}
-  .btn-ghost:hover{border-color:var(--orange-pale)}
   .toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--orange);border-radius:30px;padding:10px 20px;font-size:11px;letter-spacing:0.12em;color:#fff;opacity:0;transition:all 0.3s;z-index:200;white-space:nowrap}
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
   .profile-header{padding:28px 20px 20px;text-align:center;border-bottom:0.5px solid var(--border)}
@@ -179,8 +159,8 @@
     <div class="section">
       <div class="section-title">QUICK ACTIONS</div>
       <div class="quick-actions">
-        <div class="qa-btn" onclick="openEarnModal()">
-          <div class="qa-icon">☕</div><div class="qa-label">EARN POINTS</div><div class="qa-sub">Add bill amount</div>
+        <div class="qa-btn" onclick="showScreen('qr')">
+          <div class="qa-icon">☕</div><div class="qa-label">EARN POINTS</div><div class="qa-sub">Show QR to staff</div>
         </div>
         <div class="qa-btn" onclick="showScreen('rewards')">
           <div class="qa-icon">🎁</div><div class="qa-label">REDEEM</div><div class="qa-sub">Use your points</div>
@@ -428,84 +408,17 @@
     </div>
   </div>
 
-  <!-- EARN MODAL -->
-  <div class="modal-overlay" id="earn-modal">
-    <div class="modal">
-      <div class="modal-handle"></div>
-      <div class="modal-title">Add a visit</div>
-      <div class="modal-sub">ENTER YOUR BILL AMOUNT</div>
-      <div class="modal-rate">1 point earned for every ₹10 spent ✦</div>
-      <div class="input-group">
-        <label class="input-label">BILL AMOUNT (₹)</label>
-        <input class="input-field" type="number" id="bill-input" placeholder="e.g. 850" min="0">
-      </div>
-      <div class="pts-preview" id="pts-preview">
-        <div class="pts-preview-big" id="pts-preview-big">+85 points</div>
-        <div class="pts-preview-sub" id="pts-preview-sub">₹850 ÷ 10 = 85 points</div>
-      </div>
-      <button class="btn-orange" onclick="addPoints()">EARN POINTS</button>
-      <button class="btn-ghost" onclick="closeEarnModal()">CANCEL</button>
-    </div>
-  </div>
-
   <div class="toast" id="toast"></div>
 </div>
 
 <script>
-  // 1 point per ₹10 spent
   const RATE = 10;
-  let currentPoints = 234; // = ₹2,340 total spend
-
-  // Tiers
-  function getTier(pts) {
-    if (pts >= 500) return 'Platinum';
-    if (pts >= 200) return 'Gold';
-    return 'Silver';
-  }
+  let currentPoints = 234;
 
   function showScreen(name) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     document.getElementById('screen-' + name).classList.add('active');
     window.scrollTo(0, 0);
-  }
-
-  function openEarnModal() {
-    document.getElementById('earn-modal').classList.add('show');
-    document.getElementById('bill-input').value = '';
-    document.getElementById('pts-preview').style.display = 'none';
-  }
-
-  function closeEarnModal() {
-    document.getElementById('earn-modal').classList.remove('show');
-  }
-
-  document.getElementById('bill-input').addEventListener('input', function() {
-    const bill = parseInt(this.value);
-    const prev = document.getElementById('pts-preview');
-    if (bill > 0) {
-      const earned = Math.floor(bill / RATE);
-      prev.style.display = 'block';
-      document.getElementById('pts-preview-big').textContent = '+' + earned + ' points';
-      document.getElementById('pts-preview-sub').textContent = '₹' + bill.toLocaleString() + ' ÷ ' + RATE + ' = ' + earned + ' points';
-    } else {
-      prev.style.display = 'none';
-    }
-  });
-
-  function addPoints() {
-    const bill = parseInt(document.getElementById('bill-input').value);
-    if (!bill || bill <= 0) { showToast('Enter a valid bill amount'); return; }
-    const earned = Math.floor(bill / RATE);
-    if (earned === 0) { showToast('Minimum bill ₹10 to earn a point'); return; }
-    currentPoints += earned;
-    updateDisplay();
-    const list = document.getElementById('history-list');
-    const item = document.createElement('div');
-    item.className = 'history-item';
-    item.innerHTML = `<div class="history-dot earn"></div><div class="history-info"><div class="history-desc">Visit — ₹${bill.toLocaleString()} bill</div><div class="history-date">Just now</div></div><div class="history-pts earn">+${earned}</div>`;
-    list.insertBefore(item, list.firstChild);
-    closeEarnModal();
-    showToast('✦ +' + earned + ' points earned!');
   }
 
   function redeemReward(name, pts) {
@@ -525,7 +438,6 @@
     document.getElementById('pts-display').textContent = fmt;
     document.getElementById('balance-display').textContent = fmt + ' pts';
     document.getElementById('stat-pts').textContent = fmt;
-    // Progress: Gold=200, Platinum=500
     const pct = Math.min(Math.max(((currentPoints - 200) / 300) * 100, 2), 100);
     document.getElementById('prog-fill').style.width = pct + '%';
     const rem = Math.max(500 - currentPoints, 0);
@@ -539,10 +451,6 @@
     t.textContent = msg; t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
   }
-
-  document.getElementById('earn-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeEarnModal();
-  });
 </script>
 </body>
 </html>
